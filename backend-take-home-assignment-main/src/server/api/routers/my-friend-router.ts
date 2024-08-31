@@ -20,7 +20,7 @@ export const myFriendRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.connection().execute(async (conn) =>
+      return ctx.db.connection().execute(async (conn) => {
         /**
          * Question 4: Implement mutual friend count
          *
@@ -39,20 +39,20 @@ export const myFriendRouter = router({
          * Documentation references:
          *  - https://kysely-org.github.io/kysely/classes/SelectQueryBuilder.html#innerJoin
          */
-        conn
+        const mutualFriendResult = await mutualFriendCount(
+          conn,
+          ctx.session.userId,
+          input.friendUserId
+        ).executeTakeFirst()
+        const mutualFriendCountValue =
+          mutualFriendResult?.mutualTotalFriendCount || 0
+        return conn
           .selectFrom('users as friends')
           .innerJoin('friendships', 'friendships.friendUserId', 'friends.id')
           .innerJoin(
             userTotalFriendCount(conn).as('userTotalFriendCount'),
             'userTotalFriendCount.userId',
             'friends.id'
-          )
-          .leftJoin(
-            mutualFriendCount(conn, ctx.session.userId, input.friendUserId).as(
-              'mutualTotalFriendCount'
-            ),
-            'friends.id',
-            'mutualTotalFriendCount.userId'
           )
 
           .where('friendships.userId', '=', ctx.session.userId)
@@ -67,19 +67,23 @@ export const myFriendRouter = router({
             'friends.fullName',
             'friends.phoneNumber',
             'totalFriendCount',
-            'mutualTotalFriendCount',
           ])
           .executeTakeFirstOrThrow(() => new TRPCError({ code: 'NOT_FOUND' }))
-          .then(
-            z.object({
-              id: IdSchema,
-              fullName: NonEmptyStringSchema,
-              phoneNumber: NonEmptyStringSchema,
-              totalFriendCount: CountSchema,
-              mutualFriendCount: CountSchema,
-            }).parse
+          .then((result) =>
+            z
+              .object({
+                id: IdSchema,
+                fullName: NonEmptyStringSchema,
+                phoneNumber: NonEmptyStringSchema,
+                totalFriendCount: CountSchema,
+                mutualFriendCount: CountSchema,
+              })
+              .parse({
+                ...result,
+                mutualFriendCount: mutualFriendCountValue,
+              })
           )
-      )
+      })
     }),
 })
 
