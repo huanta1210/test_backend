@@ -264,7 +264,7 @@ describe.concurrent('Friendship request', async () => {
     ).resolves.toEqual(
       expect.objectContaining({
         id: userA.id,
-        mutualFriendCount: 0,
+        mutualFriendCount: 1,
       })
     )
   })

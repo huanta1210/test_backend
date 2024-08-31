@@ -49,10 +49,10 @@ export const myFriendRouter = router({
           )
           .leftJoin(
             mutualFriendCount(conn, ctx.session.userId, input.friendUserId).as(
-              'mutualFriendCount'
+              'mutualTotalFriendCount'
             ),
             'friends.id',
-            'mutualFriendCount.userId'
+            'mutualTotalFriendCount.userId'
           )
 
           .where('friendships.userId', '=', ctx.session.userId)
@@ -66,8 +66,8 @@ export const myFriendRouter = router({
             'friends.id',
             'friends.fullName',
             'friends.phoneNumber',
-            'userTotalFriendCount.totalFriendCount',
-            'mutualFriendCount.mutualTotalFriendCount',
+            'totalFriendCount',
+            'mutualTotalFriendCount',
           ])
           .executeTakeFirstOrThrow(() => new TRPCError({ code: 'NOT_FOUND' }))
           .then(
